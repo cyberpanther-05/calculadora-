@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e0e0e0;
+            --container-bg: #f9f9f9;
+            --display-bg: #e5e5e5;
+            --text-color: #333;
+            --button-bg: #ffffff;
+            --operator-bg: #f0f0f0;
+            --equals-bg: #0078d7;
+            --equals-hover: #0060ad;
+            --equals-text: #ffffff;
+            --shadow-light: #ffffff;
+            --shadow-dark: #b8b8b8;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .calculator {
+            width: 350px;
+            padding: 20px;
+            border-radius: 20px;
+            background: var(--container-bg);
+            box-shadow: 10px 10px 20px var(--shadow-dark),
+                        -10px -10px 20px var(--shadow-light);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .display-container {
+            padding: 15px;
+            background: var(--display-bg);
+            border-radius: 12px;
+            box-shadow: inset 5px 5px 10px var(--shadow-dark),
+                        inset -5px -5px 10px var(--shadow-light);
+            text-align: right;
+            overflow: hidden;
+        }
+
+        .previous-operand {
+            font-size: 1.2rem;
+            opacity: 0.6;
+            height: 20px;
+        }
+
+        .current-operand {
+            font-size: 2.5rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        button {
+            height: 70px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 15px;
+            background: var(--button-bg);
+            box-shadow: 5px 5px 10px var(--shadow-dark),
+                        -5px -5px 10px var(--shadow-light);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            color: var(--text-color);
+            outline: none;
+        }
+
+        button:active {
+            box-shadow: inset 5px 5px 10px var(--shadow-dark),
+                        inset -5px -5px 10px var(--shadow-light);
+            background: var(--display-bg);
+        }
+        
+        button.operator {
+            background: var(--operator-bg);
+        }
+
+        button.equals {
+            background: var(--equals-bg);
+            color: var(--equals-text);
+        }
+
+        button.equals:hover {
+            background: var(--equals-hover);
+        }
+
+        @media (max-width: 400px) {
+            .calculator {
+                width: 90%;
+            }
+
+            .current-operand {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <!-- Contenedor de la pantalla -->
+        <div class="display-container">
+            <div data-previous-operand class="previous-operand"></div>
+            <div data-current-operand class="current-operand">0</div>
+        </div>
+
+        <!-- Botones de la calculadora -->
+        <div class="buttons-grid">
+            <button data-all-clear class="operator">C</button>
+            <button data-delete class="operator">⌫</button>
+            <button data-operator class="operator">÷</button>
+            <button data-operator class="operator">×</button>
+            <button data-number>7</button>
+            <button data-number>8</button>
+            <button data-number>9</button>
+            <button data-operator class="operator">-</button>
+            <button data-number>4</button>
+            <button data-number>5</button>
+            <button data-number>6</button>
+            <button data-operator class="operator">+</button>
+            <button data-number>1</button>
+            <button data-number>2</button>
+            <button data-number>3</button>
+            <button data-equals class="equals">=</button>
+            <button data-number class="span-two">0</button>
+            <button data-decimal>.</button>
+        </div>
+    </div>
+
+    <script>
+        // Selecciona todos los botones necesarios usando atributos de datos
+        const numberButtons = document.querySelectorAll('[data-number]');
+        const operatorButtons = document.querySelectorAll('[data-operator]');
+        const equalsButton = document.querySelector('[data-equals]');
+        const deleteButton = document.querySelector('[data-delete]');
+        const allClearButton = document.querySelector('[data-all-clear]');
+        const decimalButton = document.querySelector('[data-decimal]');
+        const previousOperandTextElement = document.querySelector('[data-previous-operand]');
+        const currentOperandTextElement = document.querySelector('[data-current-operand]');
+
+        let currentOperand = '';
+        let previousOperand = '';
+        let operator = undefined;
+        let shouldClearDisplay = false;
+
+        // Función para actualizar la pantalla de la calculadora
+        function updateDisplay() {
+            currentOperandTextElement.innerText = currentOperand;
+            if (operator != null) {
+                previousOperandTextElement.innerText = `${previousOperand} ${operator}`;
+            } else {
+                previousOperandTextElement.innerText = '';
+            }
+        }
+
+        // Función para agregar un número al operando actual
+        function appendNumber(number) {
+            if (shouldClearDisplay) {
+                currentOperand = number;
+                shouldClearDisplay = false;
+            } else {
+                currentOperand = currentOperand.toString() + number.toString();
+            }
+        }
+
+        // Función para agregar el punto decimal
+        function appendDecimal() {
+            // Evita múltiples puntos decimales en el mismo número
+            if (currentOperand.includes('.')) return;
+            currentOperand += '.';
+        }
+
+        // Función para elegir un operador
+        function chooseOperator(selectedOperator) {
+            if (currentOperand === '') return;
+            if (previousOperand !== '') {
+                compute();
+            }
+            operator = selectedOperator;
+            previousOperand = currentOperand;
+            currentOperand = '';
+        }
+
+        // Función para realizar el cálculo
+        function compute() {
+            let computation;
+            const prev = parseFloat(previousOperand);
+            const current = parseFloat(currentOperand);
+
+            // Verifica si los operandos son números válidos
+            if (isNaN(prev) || isNaN(current)) return;
+
+            switch (operator) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '×':
+                    computation = prev * current;
+                    break;
+                case '÷':
+                    // Maneja la división por cero
+                    if (current === 0) {
+                        currentOperand = 'Error';
+                        previousOperand = '';
+                        operator = undefined;
+                        shouldClearDisplay = true;
+                        updateDisplay();
+                        return;
+                    }
+                    computation = prev / current;
+                    break;
+                default:
+                    return;
+            }
+            currentOperand = computation.toString();
+            operator = undefined;
+            previousOperand = '';
+            shouldClearDisplay = true;
+        }
+
+        // Función para borrar el operando actual
+        function deleteDigit() {
+            currentOperand = currentOperand.toString().slice(0, -1);
+            if (currentOperand === '') {
+                currentOperand = '0';
+            }
+        }
+
+        // Función para limpiar completamente la calculadora
+        function clear() {
+            currentOperand = '0';
+            previousOperand = '';
+            operator = undefined;
+        }
+
+        // Agrega event listeners a los botones
+        numberButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                appendNumber(button.innerText);
+                updateDisplay();
+            });
+        });
+
+        operatorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                chooseOperator(button.innerText);
+                updateDisplay();
+            });
+        });
+
+        equalsButton.addEventListener('click', button => {
+            compute();
+            updateDisplay();
+        });
+
+        allClearButton.addEventListener('click', button => {
+            clear();
+            updateDisplay();
+        });
+
+        deleteButton.addEventListener('click', button => {
+            deleteDigit();
+            updateDisplay();
+        });
+
+        decimalButton.addEventListener('click', button => {
+            appendDecimal();
+            updateDisplay();
+        });
+
+        // Inicializa la pantalla al cargar la página
+        clear();
+        updateDisplay();
+
+    </script>
+</body>
+</html>
